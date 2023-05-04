@@ -33,15 +33,16 @@ def get_help():
     print("Usage: python3 /opt/waf-bypass/main.py --host=example.com:80 [OPTION]")
     print("")
     print("Mandatory arguments:")
-    print("--proxy       - set proxy-server (e.g. --proxy='http://1.2.3.4:3128)") 
-    print("--header      - add the HTTP header to all requests (e.g. --header='Authorization: Basic YWRtaW46YWRtaW4='). Multiple use is allowed.")
-    print("--user-agent  - set the HTTP User-Agent to send with all requests, except when the User-Agent is set by the payload (e.g. --user-agent='MyUserAgent 1/1')")
-    print("--block-code  - set the HTTP status codes as meaning 'WAF blocked' (e.g. --block-code=222, default: 403). Multiple use is allowed.")
-    print("--threads     - set the number of parallel scan threads (e.g. --threads=10, default: 4)")
-    print("--timeout     - set the request processing timeout in sec. (e.g. --timeout=10, default: 30)")
-    print("--json-format - display the result of the work in JSON format")
-    print("--details     - display the False Positive and False Negative payloads (not available in JSON format)")
-    print("--exclude-dir - exclude the payload's directory (e.g., --exclude-dir='FP'). Multiple use is allowed.")
+    print("--proxy        - set proxy-server (e.g. --proxy='http://1.2.3.4:3128)") 
+    print("--header       - add the HTTP header to all requests (e.g. --header='Authorization: Basic YWRtaW46YWRtaW4='). Multiple use is allowed.")
+    print("--user-agent   - set the HTTP User-Agent to send with all requests, except when the User-Agent is set by the payload (e.g. --user-agent='MyUserAgent 1/1')")
+    print("--block-code   - set the HTTP status codes as meaning 'WAF blocked' (e.g. --block-code=222, default: 403). Multiple use is allowed.")
+    print("--block-string - set the String in the Body meaning 'WAF blocked' (e.g. --block-string='URL rejected'). Multiple use is allowed.")
+    print("--threads      - set the number of parallel scan threads (e.g. --threads=10, default: 4)")
+    print("--timeout      - set the request processing timeout in sec. (e.g. --timeout=10, default: 30)")
+    print("--json-format  - display the result of the work in JSON format")
+    print("--details      - display the False Positive and False Negative payloads (not available in JSON format)")
+    print("--exclude-dir  - exclude the payload's directory (e.g., --exclude-dir='FP'). Multiple use is allowed.")
     
 
 # increasing max pool size
@@ -69,11 +70,12 @@ try:
 
     # options
     launch_args_options = [
-        'help', 'host=', 'proxy=', 'header=', 'user-agent=', 'block-code=', 'threads=', 'timeout=', 'json-format', 'details', 'exclude-dir='
+        'help', 'host=', 'proxy=', 'header=', 'user-agent=', 'block-code=', 'block-string=', 'threads=', 'timeout=', 'json-format', 'details', 'exclude-dir='
     ]
 
     # parsing args
     block_code = {}
+    block_string = ""
     optlist, values = getopt.getopt(launch_args, '', launch_args_options)
     
     for k, v in optlist:
@@ -102,6 +104,9 @@ try:
         
         elif k == '--block-code':
             block_code[int(v)] = True
+        
+        elif k == '--block-string':
+            block_string = v
 
         elif k == '--threads':
             threads = int(v)
@@ -144,6 +149,7 @@ if not wb_result_json:
     print('# Timeout:      {}s'.format(timeout))
     print('# Threads:      {}'.format(threads))
     print('# Block code:   {}'.format(list(block_code.keys())[0]))
+    print('# Block string: {}'.format(block_string))
     print('# Exclude dirs: {}'.format(' '.join(exclude_dir)))
 
     if len(headers) > 0:
@@ -164,12 +170,13 @@ else:
     wb_result['PROXY'] = proxy
     wb_result['HEADERS'] = headers
     wb_result['BLOCK-CODE'] = list(block_code.keys())
+    wb_result['BLOCK-STRING'] = block_string
     wb_result['THREADS'] = threads
     wb_result['TIMEOUT'] = timeout
     wb_result['EXCLUDE-DIR'] = exclude_dir
 
 # launch WAF Bypass
-waf_bypass = WAFBypass(host, proxy, headers, block_code, timeout, threads, wb_result, wb_result_json, details, exclude_dir)
+waf_bypass = WAFBypass(host, proxy, headers, block_code, block_string, timeout, threads, wb_result, wb_result_json, details, exclude_dir)
 
 try:
     waf_bypass.start()

@@ -91,16 +91,18 @@ def table_processing(result, details, pdl):
         table_get_result_details(fp, fn)
 
 
-def processing_result(blocked, block_code, status_code):
+def processing_result(blocked, block_code, block_string, response):
     
+    if str(block_string) != "" and block_string in str(response.content):
+        status = ['FAILED', str(response.status_code) + ' RESPONSE CODE & STRING ' + block_string]
+    elif (not str(response.status_code).startswith('20') or response.status_code == 404) and response.status_code not in block_code:
     # if status code is not 20x and not in block codes list (403, 222 etc.) 
-    if (not str(status_code).startswith('20') or status_code == 404) and status_code not in block_code:
-        status = ['FAILED', str(status_code) + ' RESPONSE CODE']
+        status = ['FAILED', str(response.status_code) + ' RESPONSE CODE']
     else:
         if blocked:
-            status = ['PASSED', status_code] if status_code in block_code else ['BYPASSED', status_code]
+            status = ['PASSED', response.status_code] if response.status_code in block_code else ['BYPASSED', response.status_code]
         else:
-            status = ['PASSED', status_code] if status_code not in block_code else ['FALSED', status_code]
+            status = ['PASSED', response.status_code] if response.status_code not in block_code else ['FALSED', response.status_code]
     
     return status
 
@@ -207,12 +209,13 @@ def payload_encoding(z, payload, encode):
 
 class WAFBypass:
 
-    def __init__(self, host, proxy, headers, block_code, timeout, threads, wb_result, wb_result_json, details, exclude_dir):
+    def __init__(self, host, proxy, headers, block_code, block_string, timeout, threads, wb_result, wb_result_json, details, exclude_dir):
         
         # init
         self.host = host
         self.proxy = {'http': proxy, 'https': proxy}
         self.block_code = block_code
+        self.block_string = block_string
         self.headers = headers
         self.timeout = timeout
         self.threads = threads
@@ -551,7 +554,7 @@ class WAFBypass:
 
             s = init_session()
             result = s.request(method, self.host, headers=headers, proxies=self.proxy, timeout=self.timeout, verify=False)
-            result = processing_result(False, self.block_code, result.status_code)
+            result = processing_result(False, self.block_code, self.block_string, result)
 
             # check status code
             if result[0] == 'PASSED':
@@ -589,7 +592,7 @@ class WAFBypass:
 
             s = init_session()
             result = s.request(method, host, headers=headers, proxies=self.proxy, timeout=self.timeout, verify=False)
-            result = processing_result(payload['BLOCKED'], self.block_code, result.status_code)
+            result = processing_result(payload['BLOCKED'], self.block_code, self.block_string, result)
             v = result[0]
 
             if v == 'FAILED':
@@ -610,7 +613,7 @@ class WAFBypass:
 
             s = init_session()
             result = s.request(method, self.host, headers=headers, params=encoded_payload, proxies=self.proxy, timeout=self.timeout, verify=False)
-            result = processing_result(payload['BLOCKED'], self.block_code, result.status_code)
+            result = processing_result(payload['BLOCKED'], self.block_code, self.block_string, result)
             v = result[0]
 
             if v == 'FAILED':
@@ -631,7 +634,7 @@ class WAFBypass:
 
             s = init_session()
             result = s.request(method, self.host, headers=headers, data=encoded_payload, proxies=self.proxy, timeout=self.timeout, verify=False)
-            result = processing_result(payload['BLOCKED'], self.block_code, result.status_code)
+            result = processing_result(payload['BLOCKED'], self.block_code, self.block_string, result)
             v = result[0]
 
             if v == 'FAILED':
@@ -653,7 +656,7 @@ class WAFBypass:
 
             s = init_session()
             result = s.request(method, self.host, headers=headers, cookies=cookies, proxies=self.proxy, timeout=self.timeout, verify=False)
-            result = processing_result(payload['BLOCKED'], self.block_code, result.status_code)
+            result = processing_result(payload['BLOCKED'], self.block_code, self.block_string, result)
             v = result[0]
 
             if v == 'FAILED':
@@ -674,7 +677,7 @@ class WAFBypass:
 
             s = init_session()
             result = s.request(method, self.host, headers=headers, proxies=self.proxy, timeout=self.timeout, verify=False)
-            result = processing_result(payload['BLOCKED'], self.block_code, result.status_code)
+            result = processing_result(payload['BLOCKED'], self.block_code, self.block_string, result)
             v = result[0]
 
             if v == 'FAILED':
@@ -695,7 +698,7 @@ class WAFBypass:
 
             s = init_session()
             result = s.request(method, self.host, headers=headers, proxies=self.proxy, timeout=self.timeout, verify=False)
-            result = processing_result(payload['BLOCKED'], self.block_code, result.status_code)
+            result = processing_result(payload['BLOCKED'], self.block_code, self.block_string, result)
             v = result[0]
 
             if v == 'FAILED':
@@ -716,7 +719,7 @@ class WAFBypass:
 
             s = init_session()
             result = s.request(method, self.host, headers=headers, proxies=self.proxy, timeout=self.timeout, verify=False)
-            result = processing_result(payload['BLOCKED'], self.block_code, result.status_code)
+            result = processing_result(payload['BLOCKED'], self.block_code, self.block_string, result)
             v = result[0]
 
             if v == 'FAILED':
